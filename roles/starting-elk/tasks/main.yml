@@ -1,0 +1,65 @@
+---
+- name: Create a network
+  docker_network:
+    name: elk
+
+- name: Elastic
+  become: yes
+  become_user: "{{ user }}"
+  docker_container:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.9.1
+    name: elasticsearch
+    state: started
+    ports:
+    - "9200:9200"
+    - "9300:9300"
+    env:
+      discovery.type: single-node
+    networks:
+      - name: "elk"
+    networks_cli_compatible: yes
+
+- name: Kibana
+  become: yes
+  become_user: "{{ user }}"
+  docker_container:
+    image: docker.elastic.co/kibana/kibana:7.9.1
+    name: kibana
+    state: started
+    links:
+    - "elasticsearch:elasticsearch"
+    ports:
+    - "5601:5601"
+    networks: 
+      - name: "elk"
+    networks_cli_compatible: yes
+
+- name: configure metricsbeat
+  become: yes
+  copy:
+    src: metricbeat.docker.yml
+    dest: "/{{ ansible_ssh_user }}/metricbeat.docker.yml"
+    owner: root
+    group: root
+    mode: 0740
+
+- name: Metricbeat
+  docker_container:
+    image: docker.elastic.co/beats/metricbeat:7.9.1
+    name: metricbeat
+    state: started
+    user: "root"
+    volumes:
+      - "/{{ ansible_ssh_user }}/metricbeat.docker.yml:/usr/share/metricbeat/metricbeat.yml:ro"
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "/sys/fs/cgroup:/hostfs/sys/fs/cgroup:ro"
+      - "/proc:/hostfs/proc:ro"
+      - "/:/hostfs:ro"
+    env:
+      system.hostfs: "/hostfs"
+      setup.kibana.host: "elasticsearch:5601"
+      output.elasticsearch.hosts: '["elasticsearch:9200"]'
+    networks: 
+      - name: "elk"
+    networks_cli_compatible: yes
+...

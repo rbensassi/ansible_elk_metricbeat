@@ -1,0 +1,20 @@
+---
+- name: Create user {{ user }}
+  when: user is defined
+  user: 
+    name: "{{ user }}"
+    shell: /usr/bin/zsh
+    append: yes
+    groups: docker
+- name: Add ssh key
+  when: user is defined
+  authorized_key:
+    user: "{{ user }}"
+    key: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+- name: Add {{ user }} to sudoers
+  when: user is defined
+  template:
+    src: templates/sudoers.j2
+    dest: /etc/sudoers.d/{{ user }}
+    validate: 'visudo -cf %s'
+...

@@ -1,0 +1,15 @@
+---
+- name: Custom ELK + Metricbeat
+  hosts: web
+  remote_user: root
+  vars:
+    user: ansible_user
+    domains: 
+      - #domaine name
+
+  roles:
+    - setup-env
+    - create-user
+    - starting-elk
+    - starting-nginx
+...

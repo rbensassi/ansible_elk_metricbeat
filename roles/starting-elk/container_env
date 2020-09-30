@@ -1,0 +1,2 @@
+setup.kibana.host=localhost:5601
+output.elasticsearch.hosts=["localhost:9200"]
